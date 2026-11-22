@@ -7,6 +7,7 @@ Print labels on a **Nelko P21** Bluetooth label printer straight from your brows
 ## Features
 
 - Connect to the P21 over Bluetooth (COM port on Windows, or a direct Bluetooth connection in recent Chrome/Edge)
+- Battery level indicator (checked every minute and after each print)
 - Multi-line text labels that shrink automatically to fit
 - Font, bold, alignment, line spacing, and white-on-black text
 - Label size, print darkness, and number of copies
@@ -38,7 +39,7 @@ Windows normally creates a serial (COM) port for the printer automatically. To c
 3. Click **Connect printer** in the top-right corner.
 4. Pick the printer in the browser's list, then click **Connect**. It may show up as **P21**, or as a COM port (on Windows, pick the outgoing port from step 1). If there are two and the first doesn't work, try the other.
 
-The status dot turns green when the printer is connected. If the printer turns off or goes out of range, the app shows that it was disconnected; click **Connect printer** again to reconnect.
+The status dot turns green when the printer is connected, and the battery level appears next to it. It updates every minute and after each print; click it to check right away. While the printer is plugged in it shows **Charging** instead of a percentage, because the printer always reports 99% while charging. If the printer turns off or goes out of range, the app shows that it was disconnected; click **Connect printer** again to reconnect.
 
 ### 3. Write your label
 
@@ -67,6 +68,7 @@ Click **Print label**, or press `Ctrl` + `Enter`.
 | The printer isn't in the connect list | Make sure it's paired and turned on. On Windows, check that it has an **Outgoing** COM port (see step 1). |
 | "Couldn't open the port" | Close any other app using the printer (such as the Nelko phone app or another label app), turn the printer off and on, then reconnect. |
 | Connected, but nothing prints | Try the other COM port for the P21, check the label roll is loaded, and turn the printer off and on. |
+| No battery level shows up | The printer didn't answer the battery query. Click **Disconnect**, then connect again. Printing still works either way. |
 | The print is faint or patchy | Raise **Darkness**. |
 | Text is cut off | Shorten the text, lower **Line spacing**, or use the **Condensed** font. |
 

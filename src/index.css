@@ -170,6 +170,76 @@ p {
   color: var(--text-3);
 }
 
+/* ---------- Battery ---------- */
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.battery {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    opacity 0.15s;
+}
+
+.battery:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.battery:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.battery:disabled {
+  cursor: progress;
+}
+
+.battery-refreshing {
+  opacity: 0.6;
+}
+
+.battery svg {
+  color: var(--text-3);
+  flex: none;
+}
+
+.battery-fill {
+  fill: var(--ok);
+  transition: width 0.3s ease;
+}
+
+.battery-bolt {
+  fill: var(--text);
+}
+
+.battery-low {
+  color: var(--err);
+  border-color: color-mix(in srgb, var(--err) 35%, transparent);
+}
+
+.battery-low .battery-fill {
+  fill: var(--err);
+}
+
+.battery-charging .battery-fill {
+  fill: color-mix(in srgb, var(--ok) 45%, transparent);
+}
+
 /* ---------- Connection ---------- */
 
 .conn {

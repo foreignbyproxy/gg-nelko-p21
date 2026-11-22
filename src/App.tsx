@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BatteryIndicator } from './components/BatteryIndicator';
 import { ConnectionControl, type ConnState } from './components/ConnectionControl';
 import { LabelPreview } from './components/LabelPreview';
-import { P21Printer, isSerialSupported } from './lib/printer';
+import { P21Printer, isSerialSupported, type BatteryStatus } from './lib/printer';
 import {
   DEFAULT_DENSITY,
   DEFAULT_SIZE_ID,
@@ -28,6 +29,11 @@ const DEFAULTS = {
 
 type Notice = { kind: 'info' | 'success' | 'error'; text: string } | null;
 
+/** How often to re-check the battery while connected. */
+const BATTERY_POLL_MS = 60_000;
+/** Wait after a print before asking for the battery, so the printer has finished. */
+const BATTERY_AFTER_PRINT_MS = 4_000;
+
 const ALIGNS: { id: TextAlign; label: string; icon: string }[] = [
   { id: 'left', label: 'Align left', icon: 'M3 5h14M3 9h9M3 13h14M3 17h9' },
   { id: 'center', label: 'Align center', icon: 'M3 5h14M5.5 9h9M3 13h14M5.5 17h9' },
@@ -40,14 +46,39 @@ export default function App() {
   const [portLabel, setPortLabel] = useState('');
   const [printing, setPrinting] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
+  const [battery, setBattery] = useState<{ status: BatteryStatus; at: Date } | null>(null);
+  const [batteryBusy, setBatteryBusy] = useState(false);
   const supported = isSerialSupported();
 
   const printerRef = useRef<P21Printer | null>(null);
   printerRef.current ??= new P21Printer(() => {
     setConn('disconnected');
     setPortLabel('');
+    setBattery(null);
     setNotice({ kind: 'error', text: 'Printer disconnected. Check that it is on and in range.' });
   });
+
+  const refreshBattery = useCallback(async () => {
+    const printer = printerRef.current;
+    if (!printer?.connected) return;
+    setBatteryBusy(true);
+    try {
+      const status = await printer.getBattery();
+      // Keep the last reading if the printer didn't answer this time.
+      if (status && printer.connected) setBattery({ status, at: new Date() });
+    } catch {
+      // Disconnects are reported by the disconnect handler.
+    } finally {
+      setBatteryBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (conn !== 'connected') return;
+    void refreshBattery();
+    const id = setInterval(() => void refreshBattery(), BATTERY_POLL_MS);
+    return () => clearInterval(id);
+  }, [conn, refreshBattery]);
 
   const size = LABEL_SIZES.find((l) => l.id === s.sizeId) ?? LABEL_SIZES[0];
   const rendered = useMemo(
@@ -86,6 +117,7 @@ export default function App() {
     await printerRef.current!.disconnect();
     setConn('disconnected');
     setPortLabel('');
+    setBattery(null);
     setNotice(null);
   };
 
@@ -99,12 +131,13 @@ export default function App() {
       const job = buildPrintJob(rendered.image, size, s.density, s.copies);
       await printerRef.current!.print(job);
       setNotice({ kind: 'success', text: s.copies > 1 ? `Sent ${s.copies} copies.` : 'Label sent.' });
+      setTimeout(() => void refreshBattery(), BATTERY_AFTER_PRINT_MS);
     } catch (err) {
       setNotice({ kind: 'error', text: `Print failed: ${err instanceof Error ? err.message : String(err)}` });
     } finally {
       setPrinting(false);
     }
-  }, [canPrint, rendered.image, size, s.density, s.copies]);
+  }, [canPrint, rendered.image, size, s.density, s.copies, refreshBattery]);
 
   // Ctrl/Cmd + Enter prints from anywhere.
   useEffect(() => {
@@ -134,13 +167,23 @@ export default function App() {
             <p>Nelko P21 · Web Serial</p>
           </div>
         </div>
-        <ConnectionControl
-          state={conn}
-          portLabel={portLabel}
-          supported={supported}
-          onConnect={connect}
-          onDisconnect={disconnect}
-        />
+        <div className="topbar-right">
+          {conn === 'connected' && battery && (
+            <BatteryIndicator
+              battery={battery.status}
+              checkedAt={battery.at}
+              refreshing={batteryBusy}
+              onRefresh={() => void refreshBattery()}
+            />
+          )}
+          <ConnectionControl
+            state={conn}
+            portLabel={portLabel}
+            supported={supported}
+            onConnect={connect}
+            onDisconnect={disconnect}
+          />
+        </div>
       </header>
 
       {!supported && (
