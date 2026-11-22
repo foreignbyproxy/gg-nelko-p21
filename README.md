@@ -127,6 +127,15 @@ This project is an independent TypeScript implementation based on the protocol t
 
 This is a personal project, shared as-is in case it's useful to someone else. Issues and pull requests are turned off, and I don't take feature requests. If you want something changed, you're welcome to fork it; the [MIT license](LICENSE) lets you do almost anything with it.
 
+## Tip jar
+
+If this app saved you some time and you want to say thanks, tips are welcome (never expected):
+
+- **Ko-fi:** [ko-fi.com/foreignbyproxy](https://ko-fi.com/foreignbyproxy) (card or other payment methods)
+- **Ethereum:** `ggerard.eth` (`0x33e69B80C8CB4ECE21AB3e755c6F2052C688d70F`)
+  **Ethereum mainnet only.** This is a smart-contract wallet that doesn't exist on other networks, so please don't send on Base, Arbitrum, Optimism, Polygon, or any other chain; those funds can't be recovered.
+- **Bitcoin:** `36jAAkpLqXLPwVjWRWPzeAV5iNacQfFNTs`
+
 ## License
 
 [MIT](LICENSE) © 2026 foreignbyproxy
