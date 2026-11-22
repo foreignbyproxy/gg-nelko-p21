@@ -123,6 +123,10 @@ This app wouldn't exist without the people who figured out how the P21 works:
 
 This project is an independent TypeScript implementation based on the protocol those projects documented. It doesn't include their code.
 
+## Project status
+
+This is a personal project, shared as-is in case it's useful to someone else. Issues and pull requests are turned off, and I don't take feature requests. If you want something changed, you're welcome to fork it; the [MIT license](LICENSE) lets you do almost anything with it.
+
 ## License
 
 [MIT](LICENSE) © 2026 foreignbyproxy
