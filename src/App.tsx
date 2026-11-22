@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BatteryIndicator } from './components/BatteryIndicator';
 import { ConnectionControl, type ConnState } from './components/ConnectionControl';
 import { LabelPreview } from './components/LabelPreview';
-import { P21Printer, isSerialSupported, type BatteryStatus } from './lib/printer';
+import { PrinterInfoDialog } from './components/PrinterInfoDialog';
+import { P21Printer, isSerialSupported, type BatteryStatus, type PrinterInfo } from './lib/printer';
 import {
   DEFAULT_DENSITY,
   DEFAULT_SIZE_ID,
@@ -33,6 +34,9 @@ type Notice = { kind: 'info' | 'success' | 'error'; text: string } | null;
 const BATTERY_POLL_MS = 60_000;
 /** Wait after a print before asking for the battery, so the printer has finished. */
 const BATTERY_AFTER_PRINT_MS = 4_000;
+/** Attempts for the first reading after connecting, and the pause between them. */
+const BATTERY_FIRST_TRIES = 4;
+const BATTERY_RETRY_MS = 1_000;
 
 const ALIGNS: { id: TextAlign; label: string; icon: string }[] = [
   { id: 'left', label: 'Align left', icon: 'M3 5h14M3 9h9M3 13h14M3 17h9' },
@@ -48,6 +52,9 @@ export default function App() {
   const [notice, setNotice] = useState<Notice>(null);
   const [battery, setBattery] = useState<{ status: BatteryStatus; at: Date } | null>(null);
   const [batteryBusy, setBatteryBusy] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [info, setInfo] = useState<{ data: PrinterInfo; at: Date } | null>(null);
+  const [infoBusy, setInfoBusy] = useState(false);
   const supported = isSerialSupported();
 
   const printerRef = useRef<P21Printer | null>(null);
@@ -55,29 +62,70 @@ export default function App() {
     setConn('disconnected');
     setPortLabel('');
     setBattery(null);
+    setInfo(null);
+    setInfoOpen(false);
     setNotice({ kind: 'error', text: 'Printer disconnected. Check that it is on and in range.' });
   });
 
-  const refreshBattery = useCallback(async () => {
+  /** Returns true if the printer answered. */
+  const refreshBattery = useCallback(async (): Promise<boolean> => {
     const printer = printerRef.current;
-    if (!printer?.connected) return;
+    if (!printer?.connected) return false;
     setBatteryBusy(true);
     try {
       const status = await printer.getBattery();
       // Keep the last reading if the printer didn't answer this time.
-      if (status && printer.connected) setBattery({ status, at: new Date() });
+      if (status && printer.connected) {
+        setBattery({ status, at: new Date() });
+        return true;
+      }
+      return false;
     } catch {
       // Disconnects are reported by the disconnect handler.
+      return false;
     } finally {
       setBatteryBusy(false);
     }
   }, []);
 
+  const loadInfo = useCallback(async () => {
+    const printer = printerRef.current;
+    if (!printer?.connected) return;
+    setInfoBusy(true);
+    try {
+      const data = await printer.getInfo();
+      if (!printer.connected) return;
+      const at = new Date();
+      setInfo({ data, at });
+      if (data.battery) setBattery({ status: data.battery, at });
+    } catch {
+      // Disconnects are reported by the disconnect handler.
+    } finally {
+      setInfoBusy(false);
+    }
+  }, []);
+
+  const openInfo = () => {
+    setInfoOpen(true);
+    void loadInfo();
+  };
+
   useEffect(() => {
     if (conn !== 'connected') return;
-    void refreshBattery();
+    let cancelled = false;
+    // Right after connecting, the printer announces its label roll and can
+    // ignore a query sent at the same moment, so retry the first reading.
+    void (async () => {
+      for (let attempt = 0; attempt < BATTERY_FIRST_TRIES && !cancelled; attempt++) {
+        if (await refreshBattery()) break;
+        await new Promise((r) => setTimeout(r, BATTERY_RETRY_MS));
+      }
+    })();
     const id = setInterval(() => void refreshBattery(), BATTERY_POLL_MS);
-    return () => clearInterval(id);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [conn, refreshBattery]);
 
   const size = LABEL_SIZES.find((l) => l.id === s.sizeId) ?? LABEL_SIZES[0];
@@ -118,6 +166,8 @@ export default function App() {
     setConn('disconnected');
     setPortLabel('');
     setBattery(null);
+    setInfo(null);
+    setInfoOpen(false);
     setNotice(null);
   };
 
@@ -175,6 +225,21 @@ export default function App() {
               refreshing={batteryBusy}
               onRefresh={() => void refreshBattery()}
             />
+          )}
+          {conn === 'connected' && (
+            <button
+              type="button"
+              className="icon-btn icon-btn-outline"
+              onClick={openInfo}
+              aria-label="Printer info"
+              title="Printer info"
+            >
+              <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden>
+                <circle cx="10" cy="10" r="7.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M10 9v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="10" cy="6.2" r="1.1" fill="currentColor" />
+              </svg>
+            </button>
           )}
           <ConnectionControl
             state={conn}
@@ -395,6 +460,15 @@ export default function App() {
           )}
         </section>
       </main>
+
+      <PrinterInfoDialog
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        info={info}
+        loading={infoBusy}
+        onRefresh={() => void loadInfo()}
+        selectedSize={size}
+      />
     </div>
   );
 }

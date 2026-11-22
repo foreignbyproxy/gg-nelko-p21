@@ -1,4 +1,4 @@
-import type { BatteryStatus } from '../lib/printer';
+import type { BatteryStatus } from '../lib/replies';
 
 interface Props {
   battery: BatteryStatus;

@@ -8,6 +8,7 @@ Print labels on a **Nelko P21** Bluetooth label printer straight from your brows
 
 - Connect to the P21 over Bluetooth (COM port on Windows, or a direct Bluetooth connection in recent Chrome/Edge)
 - Battery level indicator (checked every minute and after each print)
+- Printer info panel: status, firmware and hardware versions, and the loaded label roll (size, type, colour) read from its NFC tag
 - Multi-line text labels that shrink automatically to fit
 - Font, bold, alignment, line spacing, and white-on-black text
 - Label size, print darkness, and number of copies
@@ -41,6 +42,13 @@ Windows normally creates a serial (COM) port for the printer automatically. To c
 
 The status dot turns green when the printer is connected, and the battery level appears next to it. It updates every minute and after each print; click it to check right away. While the printer is plugged in it shows **Charging** instead of a percentage, because the printer always reports 99% while charging. If the printer turns off or goes out of range, the app shows that it was disconnected; click **Connect printer** again to reconnect.
 
+Click the **ⓘ** button next to the battery level to see printer info:
+
+- **Printer:** status (Ready, Lid open, No labels loaded, …), battery, firmware and hardware versions, resolution, auto power-off, and beep setting.
+- **Loaded labels:** the size, type, gap, and colour of the roll in the printer, plus its paper code, read from the NFC tag on genuine rolls. If this doesn't match the app's **Label size**, the panel tells you. Rolls without a readable tag still print fine; just pick the size yourself.
+
+Click **Refresh** in the panel to read everything again.
+
 ### 3. Write your label
 
 - **Label text:** type in the text box and press `Enter` to start a new line. The text is made as large as possible and shrinks automatically to fit the label.
@@ -69,6 +77,7 @@ Click **Print label**, or press `Ctrl` + `Enter`.
 | "Couldn't open the port" | Close any other app using the printer (such as the Nelko phone app or another label app), turn the printer off and on, then reconnect. |
 | Connected, but nothing prints | Try the other COM port for the P21, check the label roll is loaded, and turn the printer off and on. |
 | No battery level shows up | The printer didn't answer the battery query. Click **Disconnect**, then connect again. Printing still works either way. |
+| Something else isn't working | Open the app with `?debug` at the end of the address (e.g. `http://localhost:5173/?debug`), press F12, and look at the `[P21]` lines in the Console tab. They show every byte sent to and received from the printer. |
 | The print is faint or patchy | Raise **Darkness**. |
 | Text is cut off | Shorten the text, lower **Line spacing**, or use the **Condensed** font. |
 
